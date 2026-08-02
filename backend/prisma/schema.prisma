@@ -1,0 +1,311 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  MANAGER
+  READONLY
+}
+
+enum DealStage {
+  NEW_LEAD
+  FIRST_CONTACT
+  QUALIFICATION
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(MANAGER)
+  createdAt    DateTime @default(now())
+  deletedAt    DateTime?
+
+  managedClients   Client[]         @relation("ClientManager")
+  deals            Deal[]           @relation("DealResponsible")
+  comments         Comment[]
+  dealHistory      DealHistory[]
+  activityLogs     ActivityLog[]
+  refreshTokens    RefreshToken[]
+  tasksAssigned    Task[]           @relation("TaskAssignee")
+  tasksCreated     Task[]           @relation("TaskCreator")
+  notifications    Notification[]
+  uploadedFiles    Attachment[]
+  commentTemplates CommentTemplate[]
+  qcReviews        QcReview[]       @relation("QcManager")
+  qcReviewedBy     QcReview[]       @relation("QcReviewer")
+  qcComments       QcComment[]
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LeadSource {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  clients Client[]
+}
+
+model Client {
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  phone                String    @unique
+  email                String?
+  sourceId             Int?
+  source               String?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  comment              String?
+  responsibleManagerId Int?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
+
+  responsibleManager User?       @relation("ClientManager", fields: [responsibleManagerId], references: [id])
+  leadSource         LeadSource? @relation(fields: [sourceId], references: [id])
+  deals              Deal[]
+  tasks              Task[]
+
+  @@index([name])
+  @@index([email])
+  @@index([responsibleManagerId])
+  @@index([deletedAt])
+}
+
+model Deal {
+  id              Int       @id @default(autoincrement())
+  clientId        Int
+  title           String
+  amount          Decimal   @db.Decimal(14, 2)
+  stage           DealStage @default(NEW_LEAD)
+  stageChangedAt  DateTime  @default(now())
+  responsibleId   Int
+  nextContactAt   DateTime?
+  lostReason      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  client      Client        @relation(fields: [clientId], references: [id])
+  responsible User          @relation("DealResponsible", fields: [responsibleId], references: [id])
+  comments    Comment[]
+  history     DealHistory[]
+  tasks       Task[]
+  attachments Attachment[]
+
+  @@index([stage])
+  @@index([responsibleId])
+  @@index([clientId])
+  @@index([nextContactAt])
+  @@index([stageChangedAt])
+  @@index([deletedAt])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  dealId    Int
+  authorId  Int
+  text      String
+  createdAt DateTime @default(now())
+
+  deal   Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([dealId])
+}
+
+model CommentTemplate {
+  id        Int      @id @default(autoincrement())
+  title     String
+  text      String
+  createdBy Int
+  createdAt DateTime @default(now())
+
+  creator User @relation(fields: [createdBy], references: [id])
+}
+
+model DealHistory {
+  id        Int      @id @default(autoincrement())
+  dealId    Int
+  field     String
+  oldValue  String?
+  newValue  String?
+  changedBy Int
+  changedAt DateTime @default(now())
+
+  deal    Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  changer User @relation(fields: [changedBy], references: [id])
+
+  @@index([dealId])
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  action     String
+  entityType String
+  entityId   Int
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([action])
+  @@index([userId])
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(OPEN)
+  dueAt       DateTime?
+  dealId      Int?
+  clientId    Int?
+  assigneeId  Int
+  createdById Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  completedAt DateTime?
+  deletedAt   DateTime?
+
+  deal      Deal?   @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  client    Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  assignee  User    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy User    @relation("TaskCreator", fields: [createdById], references: [id])
+
+  @@index([assigneeId, status])
+  @@index([dueAt])
+  @@index([deletedAt])
+}
+
+model Attachment {
+  id           Int      @id @default(autoincrement())
+  dealId       Int
+  uploadedById Int
+  originalName String
+  storedName   String
+  mimeType     String?
+  size         Int
+  createdAt    DateTime @default(now())
+  deletedAt    DateTime?
+
+  deal       Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+
+  @@index([dealId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+enum QcSourceType {
+  TEXT
+  AUDIO
+}
+
+model QcReview {
+  id               Int          @id @default(autoincrement())
+  managerId        Int
+  createdById      Int
+  title            String
+  clientName       String?
+  sourceType       QcSourceType @default(TEXT)
+  transcript       String
+  audioStoredName  String?
+  audioOriginalName String?
+  overallScore     Int
+  manualScore      Int?
+  isCritical       Boolean      @default(false)
+  criterionScores  Json
+  evidence         Json
+  errors           Json
+  recommendations  Json
+  summary          String
+  analyzerVersion  String       @default("rules-v1")
+  supervisorComment String?
+  reviewedAt       DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  manager   User        @relation("QcManager", fields: [managerId], references: [id])
+  createdBy User        @relation("QcReviewer", fields: [createdById], references: [id])
+  comments  QcComment[]
+
+  @@index([managerId])
+  @@index([createdAt])
+  @@index([isCritical])
+  @@index([overallScore])
+}
+
+model QcComment {
+  id        Int      @id @default(autoincrement())
+  reviewId  Int
+  authorId  Int
+  text      String
+  createdAt DateTime @default(now())
+
+  review QcReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  author User     @relation(fields: [authorId], references: [id])
+
+  @@index([reviewId])
+}
+
+/** Daily snapshot of funnel stats for history / "нужно проработать". */
+model FunnelSnapshot {
+  id             Int      @id @default(autoincrement())
+  day            DateTime @db.Date @unique
+  totalDeals     Int
+  openDeals      Int
+  openAmount     Float
+  needsWorkCount Int
+  byStage        Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
