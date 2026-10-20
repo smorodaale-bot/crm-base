@@ -210,7 +210,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/import/template', requireFeature('stock'), (_req, res) => {
+router.get('/import/template', requireFeature('stock_import'), (_req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="sklad-shablon.csv"');
   return res.send(`\uFEFF${TEMPLATE_CSV}`);
@@ -229,7 +229,7 @@ function listingFields(avitoUrl) {
 router.post(
   '/import',
   requireWrite,
-  requireFeature('stock'),
+  requireFeature('stock_import'),
   (req, res, next) => {
     importUpload.single('file')(req, res, (err) => {
       if (err) return res.status(400).json({ error: 'Не удалось прочитать файл (лимит 2 МБ)' });
