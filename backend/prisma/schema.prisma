@@ -30,21 +30,197 @@ enum TaskStatus {
   CANCELLED
 }
 
-model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  passwordHash String
-  name         String
-  role         Role     @default(MANAGER)
-  createdAt    DateTime @default(now())
-  deletedAt    DateTime?
+enum LeadType {
+  PURCHASE
+  CREDIT
+  TRADE_IN
+  BUYOUT
+}
 
+enum VehicleKind {
+  NEW
+  USED
+}
+
+enum VehicleStatus {
+  IN_STOCK
+  RESERVED
+  SOLD
+  IN_TRANSIT
+}
+
+enum ListingStatus {
+  NONE
+  LISTED
+  NEEDS_UNLIST
+  UNLISTED
+}
+
+enum VisitStatus {
+  SCHEDULED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+enum ChatChannel {
+  INTERNAL
+  TELEGRAM
+  WHATSAPP
+  SITE_WIDGET
+  MAX
+}
+
+enum PlanTier {
+  START
+  BASIC
+  ADVANCED
+  ULTRA
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  CANCELED
+}
+
+model Organization {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  slug               String   @unique
+  ownerId            Int?
+  /** Public website lead form token (X-Lead-Token). Unique per org. */
+  leadPublicToken    String?  @unique
+  /** Allowed browser Origins for CORS, e.g. ["https://salon.ru"] */
+  leadWebsiteOrigins Json     @default("[]")
+  /** Per-org Telegram bot for inbound customer leads */
+  telegramBotToken   String?
+  telegramWebhookSecret String?
+  telegramBotUsername String?
+  telegramConnectedAt DateTime?
+  /** Qualifying script for inbound Telegram bot (welcome, questions, etc.) */
+  telegramBotConfig   Json?
+  /** Per-org MAX messenger bot (https://dev.max.ru) */
+  maxBotToken         String?
+  maxWebhookSecret    String?
+  maxBotUsername      String?
+  maxConnectedAt      DateTime?
+  maxBotConfig        Json?
+  /** Avito inbound webhook token (X-Avito-Token / X-Lead-Token) */
+  avitoWebhookToken   String?   @unique
+  avitoConnectedAt    DateTime?
+  /** WhatsApp inbound (Green-API / Meta) */
+  whatsappWebhookToken String?  @unique
+  whatsappVerifyToken  String?
+  whatsappGreenIdInstance String?
+  whatsappGreenApiToken   String?
+  whatsappConnectedAt  DateTime?
+  /** City of the salon, collected at signup. */
+  city               String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  owner        User?         @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  subscription Subscription?
+  users        User[]        @relation("OrgMembers")
+  invites      OrgInvite[]
+  salons       Salon[]
+  payments     Payment[]
+  clients      Client[]
+  telegramDialogs TelegramDialog[]
+}
+
+model Payment {
+  id                Int           @id @default(autoincrement())
+  organizationId    Int
+  plan              PlanTier
+  amountRub         Int
+  status            PaymentStatus @default(PENDING)
+  yookassaPaymentId String?       @unique
+  confirmationUrl   String?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Subscription {
+  id                      Int                @id @default(autoincrement())
+  organizationId          Int                @unique
+  plan                    PlanTier           @default(BASIC)
+  billingInterval         String             @default("month")
+  promoMonthsUsed         Int                @default(0)
+  status                  SubscriptionStatus @default(TRIAL)
+  trialEndsAt             DateTime?
+  currentPeriodEnd        DateTime?
+  /** Period end date for which renewal reminder email was already sent */
+  reminderSentAt          DateTime?
+  /** YooKassa saved payment method for auto-renew */
+  yookassaPaymentMethodId String?
+  paymentMethodTitle      String?
+  autoRenew               Boolean            @default(false)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([plan])
+  @@index([currentPeriodEnd])
+  @@index([autoRenew])
+}
+
+model Salon {
+  id             Int      @id @default(autoincrement())
+  name           String
+  slug           String   @unique
+  organizationId Int?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  users        User[]
+  clients      Client[]
+  deals        Deal[]
+  vehicles     Vehicle[]
+
+  @@index([organizationId])
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  passwordHash   String
+  name           String
+  phone          String?
+  positionLabel  String?
+  role           Role     @default(MANAGER)
+  telegramChatId String?
+  salonId        Int?
+  organizationId Int?
+  createdAt      DateTime @default(now())
+  deletedAt      DateTime?
+
+  salon            Salon?           @relation(fields: [salonId], references: [id])
+  organization     Organization?    @relation("OrgMembers", fields: [organizationId], references: [id])
+  ownedOrgs        Organization[]   @relation("OrgOwner")
   managedClients   Client[]         @relation("ClientManager")
   deals            Deal[]           @relation("DealResponsible")
   comments         Comment[]
   dealHistory      DealHistory[]
   activityLogs     ActivityLog[]
   refreshTokens    RefreshToken[]
+  trustedDevices   TrustedDevice[]
   tasksAssigned    Task[]           @relation("TaskAssignee")
   tasksCreated     Task[]           @relation("TaskCreator")
   notifications    Notification[]
@@ -53,6 +229,11 @@ model User {
   qcReviews        QcReview[]       @relation("QcManager")
   qcReviewedBy     QcReview[]       @relation("QcReviewer")
   qcComments       QcComment[]
+  visitsAsManager  Visit[]          @relation("VisitManager")
+  chatMessages     ChatMessage[]
+  vehiclesReserved Vehicle[]        @relation("VehicleReservedBy")
+
+  @@index([organizationId])
 }
 
 model RefreshToken {
@@ -62,11 +243,61 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   revokedAt DateTime?
+  remember  Boolean  @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+/** Browser trusted after a successful email code. Password-only login until it expires. */
+model TrustedDevice {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  tokenHash  String    @unique
+  userAgent  String?
+  expiresAt  DateTime
+  lastUsedAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/** One-time codes for email verification (login / register). */
+model EmailOtp {
+  id         Int       @id @default(autoincrement())
+  email      String
+  purpose    String
+  codeHash   String
+  payload    Json?
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+}
+
+model OrgInvite {
+  id             Int       @id @default(autoincrement())
+  tokenHash      String    @unique
+  email          String
+  role           Role      @default(MANAGER)
+  organizationId Int
+  salonId        Int?
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 model LeadSource {
@@ -80,7 +311,7 @@ model LeadSource {
 model Client {
   id                   Int       @id @default(autoincrement())
   name                 String
-  phone                String    @unique
+  phone                String
   email                String?
   sourceId             Int?
   source               String?
@@ -89,41 +320,109 @@ model Client {
   utmCampaign          String?
   comment              String?
   responsibleManagerId Int?
+  salonId              Int?
+  organizationId       Int?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   deletedAt            DateTime?
 
-  responsibleManager User?       @relation("ClientManager", fields: [responsibleManagerId], references: [id])
-  leadSource         LeadSource? @relation(fields: [sourceId], references: [id])
+  salon              Salon?        @relation(fields: [salonId], references: [id])
+  organization       Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  responsibleManager User?         @relation("ClientManager", fields: [responsibleManagerId], references: [id])
+  leadSource         LeadSource?   @relation(fields: [sourceId], references: [id])
   deals              Deal[]
   tasks              Task[]
+  visits             Visit[]
 
+  @@unique([organizationId, phone])
   @@index([name])
   @@index([email])
+  @@index([phone])
   @@index([responsibleManagerId])
   @@index([deletedAt])
+  @@index([salonId])
+  @@index([organizationId])
+}
+
+model Vehicle {
+  id              Int           @id @default(autoincrement())
+  salonId         Int?
+  vin             String?       @unique
+  lotNumber       String?
+  brand           String
+  model           String
+  year            Int?
+  kind            VehicleKind   @default(USED)
+  status          VehicleStatus @default(IN_STOCK)
+  price           Decimal       @db.Decimal(14, 2)
+  purchasePrice   Decimal?      @db.Decimal(14, 2)
+  prepCost        Decimal       @default(0) @db.Decimal(14, 2)
+  mileageKm       Int?
+  color           String?
+  description     String?
+  equipment       String?
+  photoUrls       Json?
+  externalId      String?
+  sourceSystem    String?
+  avitoItemId     String?
+  avitoUrl        String?
+  listingStatus   ListingStatus @default(NONE)
+  stockedAt       DateTime      @default(now())
+  reservedAt      DateTime?
+  reservedUntil   DateTime?
+  reservedById    Int?
+  reservedDealId  Int?          @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  salon        Salon? @relation(fields: [salonId], references: [id])
+  reservedBy   User?  @relation("VehicleReservedBy", fields: [reservedById], references: [id])
+  reservedDeal Deal?  @relation("VehicleReservedDeal", fields: [reservedDealId], references: [id])
+  deals        Deal[] @relation("DealVehicle")
+
+  @@index([brand, model])
+  @@index([status])
+  @@index([salonId])
+  @@index([externalId])
+  @@index([reservedUntil])
+  @@index([reservedById])
+  @@index([avitoItemId])
+  @@index([listingStatus])
 }
 
 model Deal {
-  id              Int       @id @default(autoincrement())
-  clientId        Int
-  title           String
-  amount          Decimal   @db.Decimal(14, 2)
-  stage           DealStage @default(NEW_LEAD)
-  stageChangedAt  DateTime  @default(now())
-  responsibleId   Int
-  nextContactAt   DateTime?
-  lostReason      String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id               Int       @id @default(autoincrement())
+  clientId         Int
+  title            String
+  amount           Decimal   @db.Decimal(14, 2)
+  stage            DealStage @default(NEW_LEAD)
+  stageChangedAt   DateTime  @default(now())
+  responsibleId    Int
+  nextContactAt    DateTime?
+  lostReason       String?
+  leadType         LeadType  @default(PURCHASE)
+  vehicleId        Int?
+  salonId          Int?
+  sourceUrl        String?
+  idempotencyKey   String?   @unique
+  firstRespondedAt DateTime?
+  slaBreachedAt    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
 
   client      Client        @relation(fields: [clientId], references: [id])
   responsible User          @relation("DealResponsible", fields: [responsibleId], references: [id])
+  vehicle     Vehicle?      @relation("DealVehicle", fields: [vehicleId], references: [id])
+  reservedVehicle Vehicle?  @relation("VehicleReservedDeal")
+  salon       Salon?        @relation(fields: [salonId], references: [id])
   comments    Comment[]
   history     DealHistory[]
   tasks       Task[]
   attachments Attachment[]
+  visits      Visit[]
+  chatMessages ChatMessage[]
 
   @@index([stage])
   @@index([responsibleId])
@@ -131,6 +430,76 @@ model Deal {
   @@index([nextContactAt])
   @@index([stageChangedAt])
   @@index([deletedAt])
+  @@index([leadType])
+  @@index([vehicleId])
+  @@index([firstRespondedAt])
+  @@index([slaBreachedAt])
+}
+
+model Visit {
+  id          Int         @id @default(autoincrement())
+  clientId    Int
+  dealId      Int?
+  managerId   Int
+  scheduledAt DateTime
+  status      VisitStatus @default(SCHEDULED)
+  note        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  client  Client @relation(fields: [clientId], references: [id])
+  deal    Deal?  @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  manager User   @relation("VisitManager", fields: [managerId], references: [id])
+
+  @@index([scheduledAt, status])
+  @@index([managerId])
+  @@index([clientId])
+  @@index([dealId])
+}
+
+model ChatMessage {
+  id         Int         @id @default(autoincrement())
+  dealId     Int
+  authorId   Int?
+  channel    ChatChannel @default(INTERNAL)
+  direction  String      @default("out")
+  body       String
+  externalId String?
+  createdAt  DateTime    @default(now())
+
+  deal   Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([dealId, createdAt])
+  @@index([channel])
+}
+
+model LeadIdempotency {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  dealId    Int
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/** In-progress Telegram qualifying dialog per org + chat. */
+model TelegramDialog {
+  id             Int      @id @default(autoincrement())
+  organizationId Int
+  telegramChatId String
+  telegramUserId String?
+  step           String   @default("welcome")
+  answers        Json     @default("{}")
+  dealId         Int?
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, telegramChatId])
+  @@index([organizationId])
+  @@index([dealId])
 }
 
 model Comment {

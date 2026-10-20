@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
-import { ROLE_LABELS } from '../constants.js';
+import { PLAN_LABELS, roleLabel, SUBSCRIPTION_STATUS_LABELS } from '../constants.js';
+import NotificationBell from './NotificationBell.jsx';
 
 export default function Layout() {
-  const { user, logout, isSupervisor, canWrite } = useAuth();
+  const { user, logout, isSupervisor, canWrite, canQc, canStock, plan, subscriptionStatus } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingPath, setPendingPath] = useState(null);
+  const [search, setSearch] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setMenuOpen(false);
+    setPendingPath(null);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -26,6 +31,34 @@ export default function Layout() {
   }, [menuOpen]);
 
   const firstName = user?.name?.split(/\s+/)[0] || 'пользователь';
+  const showTrialBanner = subscriptionStatus === 'TRIAL' || subscriptionStatus === 'PAST_DUE';
+
+  function onSearch(e) {
+    e.preventDefault();
+    const q = search.trim();
+    if (!q) return;
+    navigate(`/deals?search=${encodeURIComponent(q)}`);
+  }
+
+  const workNav = [
+    { to: '/dashboard', label: 'Дашборд', icon: '◆' },
+    { to: '/inbox', label: 'Рабочий стол', icon: '▣' },
+    { to: '/pipeline', label: 'Воронка', icon: '◫' },
+    { to: '/deals', label: 'Сделки', icon: '▦' },
+    { to: '/clients', label: 'Клиенты', icon: '◎' },
+    { to: '/visits', label: 'Визиты', icon: '◷' },
+    canStock ? { to: '/vehicles', label: 'Склад', icon: '▣' } : null,
+    { to: '/tasks', label: 'Задачи', icon: '☑' },
+    { to: '/reminders', label: 'Напоминания', icon: '◷' },
+  ].filter(Boolean);
+
+  const manageNav = [
+    isSupervisor ? { to: '/analytics', label: 'Аналитика', icon: '▤' } : null,
+    isSupervisor && canQc ? { to: '/qc', label: 'Контроль качества', icon: '★' } : null,
+    { to: '/activity', label: 'Журнал', icon: '?' },
+    isSupervisor ? { to: '/org', label: 'Организация', icon: '◇', end: false } : null,
+    { to: '/profile', label: 'Личный кабинет', icon: '●' },
+  ].filter(Boolean);
 
   return (
     <div className={`app-shell ${menuOpen ? 'nav-open' : ''}`}>
@@ -41,10 +74,16 @@ export default function Layout() {
       <aside className="sidebar" id="app-sidebar">
         <div className="sidebar-top">
           <div className="brand">
-            <img className="brand-logo" src="/logo.svg" alt="SkayAvto" width="36" height="36" />
-            <div>
-              <div className="brand-title">SkayAvto</div>
-              <div className="brand-sub">CRM v.01</div>
+            <img
+              className="brand-logo"
+              src="/logo.svg"
+              alt="Nova CRM"
+              width="32"
+              height="32"
+            />
+            <div className="brand-text">
+              <span className="brand-title">Nova</span>
+              <span className="brand-sub">CRM</span>
             </div>
           </div>
           <button
@@ -58,14 +97,74 @@ export default function Layout() {
         </div>
 
         <nav className="nav" onClick={() => setMenuOpen(false)}>
-          <NavLink to="/" end>
-            Воронка
-          </NavLink>
-          <NavLink to="/deals">Сделки</NavLink>
-          <NavLink to="/clients">Клиенты</NavLink>
-          {isSupervisor && <NavLink to="/qc">Контроль качества</NavLink>}
-          <NavLink to="/activity">Журнал</NavLink>
+          <div className="nav-group-label">Работа</div>
+          {workNav.map((item) => (
+            <NavLink
+              key={item.to + item.label}
+              to={item.to}
+              end={item.end}
+              className="nav-item"
+              onClick={() => {
+                if (item.to !== location.pathname) setPendingPath(item.to);
+              }}
+            >
+              <span className="nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              <span className="nav-label">{item.label}</span>
+              <span className="nav-chevron" aria-hidden="true">
+                ›
+              </span>
+            </NavLink>
+          ))}
+          <div className="nav-group-label">Управление</div>
+          {manageNav.map((item) => (
+            <NavLink
+              key={item.to + item.label}
+              to={item.to}
+              end={item.to === '/org' ? false : item.end}
+              className="nav-item"
+              onClick={() => {
+                if (item.to !== location.pathname) setPendingPath(item.to);
+              }}
+            >
+              <span className="nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              <span className="nav-label">{item.label}</span>
+              <span className="nav-chevron" aria-hidden="true">
+                ›
+              </span>
+            </NavLink>
+          ))}
         </nav>
+
+        <div className="sidebar-bottom">
+          <div className="sidebar-promo">
+            <p>
+              Тариф {PLAN_LABELS[plan] || plan || 'Базовый'}
+              {subscriptionStatus
+                ? ` · ${SUBSCRIPTION_STATUS_LABELS[subscriptionStatus] || subscriptionStatus}`
+                : ''}
+            </p>
+            <Link className="sidebar-promo-btn" to={isSupervisor ? '/org/billing' : '/profile'}>
+              {isSupervisor ? 'Подписка Nova' : 'Личный кабинет'}
+            </Link>
+          </div>
+
+          <Link to="/profile" className="sidebar-user" title="Личный кабинет">
+            <div className="user-avatar" aria-hidden="true">
+              {(user?.name || '?').charAt(0).toUpperCase()}
+            </div>
+            <div className="user-meta">
+              <div className="user-name">{user?.name}</div>
+              <div className="user-role">{roleLabel(user)}</div>
+            </div>
+            <span className="nav-chevron" aria-hidden="true">
+              ⌄
+            </span>
+          </Link>
+        </div>
       </aside>
 
       <div className="main-wrap">
@@ -81,31 +180,87 @@ export default function Layout() {
             Меню
           </button>
           <div className="topbar-greeting">
-            <h1 className="greeting-title">Привет, {firstName}</h1>
-            <p className="greeting-sub muted">SkayAvto CRM · автосалон</p>
+            {location.pathname === '/dashboard' || location.pathname === '/inbox' ? (
+              <h1 className="greeting-title">Здравствуйте, {firstName}</h1>
+            ) : null}
           </div>
 
+          <form className="topbar-search" onSubmit={onSearch}>
+            <img
+              src="/figma/icon-search.svg"
+              alt=""
+              width="20"
+              height="20"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <input
+              type="search"
+              placeholder="Поиск"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Поиск"
+            />
+          </form>
+
           <div className="topbar-user">
-            <div className="user-card topbar-user-card">
+            <NotificationBell />
+            <Link
+              to="/profile"
+              className="user-card topbar-user-card topbar-user-card-link"
+              title="Личный кабинет и настройки"
+              aria-label="Открыть личный кабинет"
+            >
               <div className="user-avatar" aria-hidden="true">
                 {(user?.name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="user-meta">
                 <div className="user-name">{user?.name}</div>
-                <div className="user-role">{ROLE_LABELS[user?.role] || user?.role}</div>
+                <div className="user-role">{roleLabel(user)}</div>
               </div>
               {isSupervisor && <div className="badge">Все сделки</div>}
               {!isSupervisor && canWrite && <div className="badge muted">Только свои</div>}
-              {!canWrite && <div className="badge muted">Read-only</div>}
-            </div>
+              {!canWrite && <div className="badge muted">Только чтение</div>}
+            </Link>
             <button type="button" className="btn" onClick={logout}>
               Выйти
             </button>
           </div>
         </header>
+
+        {showTrialBanner && location.pathname !== '/org/billing' && (
+          <div className={`sub-banner ${subscriptionStatus === 'PAST_DUE' ? 'sub-banner-warn' : ''}`}>
+            {subscriptionStatus === 'TRIAL'
+              ? 'Пробный период. Выберите тариф и оплатите в разделе «Подписка».'
+              : 'Подписка неактивна. Продлите оплату в разделе «Подписка».'}
+            {isSupervisor && (
+              <Link to="/org/billing" className="sub-banner-link">
+                Открыть
+              </Link>
+            )}
+          </div>
+        )}
+
         <main className="content">
-          <Outlet />
+          {pendingPath ? <div className="page-pending">Загрузка...</div> : <Outlet />}
         </main>
+
+        <footer
+          className="muted"
+          style={{
+            padding: '0.75rem 1.25rem 1.25rem',
+            fontSize: '0.8rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
+          <Link to="/pricing">Тарифы</Link>
+          <Link to="/offer">Оферта</Link>
+          <Link to="/privacy">Политика ПДн</Link>
+          <Link to="/contacts">Контакты</Link>
+        </footer>
       </div>
     </div>
   );

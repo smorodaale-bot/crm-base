@@ -24,4 +24,17 @@ export const config = {
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   uploadDir: process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads'),
   cookieSecure: process.env.COOKIE_SECURE === 'true',
+  /** Email code for login/register. Unset or any value except "false" keeps OTP on. */
+  emailOtp: String(process.env.AUTH_EMAIL_OTP ?? 'true').toLowerCase() !== 'false',
+  /** −50% for the first 3 monthly payments of the first 30 organizations. */
+  earlyPromo: String(process.env.EARLY_PROMO || '').toLowerCase() === 'true',
 };
+
+if (process.env.NODE_ENV === 'production') {
+  if (process.env.COOKIE_SECURE !== 'true') {
+    throw new Error('В продакшене COOKIE_SECURE должен быть true');
+  }
+  if (String(process.env.JWT_SECRET || '').length < 32) {
+    throw new Error('В продакшене JWT_SECRET должен быть не короче 32 символов');
+  }
+}
