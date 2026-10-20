@@ -181,6 +181,7 @@ router.get('/config', (_req, res) => {
   res.json({
     emailOtp: config.emailOtp,
     emailConfigured: emailConfigured(),
+    supportEmail: config.supportEmail,
   });
 });
 

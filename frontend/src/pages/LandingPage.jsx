@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { COMPANY } from '../legal/company.js';
+import { SupportEmailLink } from '../legal/SupportEmail.jsx';
 import { useDocumentMeta } from '../hooks/useDocumentMeta.js';
 
 function rub(n) {
@@ -236,6 +237,7 @@ export default function LandingPage() {
             <span>{COMPANY.legalName}</span>
           </span>
           <nav>
+            <SupportEmailLink />
             <Link to="/offer">Оферта</Link>
             <Link to="/privacy">ПДн</Link>
             <Link to="/contacts">Контакты</Link>

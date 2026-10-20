@@ -26,8 +26,9 @@ export const config = {
   cookieSecure: process.env.COOKIE_SECURE === 'true',
   /** Email code for login/register. Unset or any value except "false" keeps OTP on. */
   emailOtp: String(process.env.AUTH_EMAIL_OTP ?? 'true').toLowerCase() !== 'false',
-  /** −50% for the first 3 monthly payments of the first 30 organizations. */
-  earlyPromo: String(process.env.EARLY_PROMO || '').toLowerCase() === 'true',
+  /** −50% for the first 3 monthly payments of the first 30 organizations. Off only when EARLY_PROMO=false. */
+  earlyPromo: String(process.env.EARLY_PROMO ?? 'true').toLowerCase() !== 'false',
+  supportEmail: String(process.env.SUPPORT_EMAIL || 'support@nova-crm.online').trim() || 'support@nova-crm.online',
 };
 
 if (process.env.NODE_ENV === 'production') {
