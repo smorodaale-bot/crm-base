@@ -1,3 +1,5 @@
+import { trackRequest } from './loadingBridge.js';
+
 const memory = { token: null };
 
 export function getToken() {
@@ -33,39 +35,51 @@ export async function api(path, options = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  let res = await fetch(`/api${path}`, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  const { overlay, progress, ...fetchOpts } = options;
+  const method = String(options.method || 'GET').toUpperCase();
+  const mutating = method !== 'GET' && method !== 'HEAD';
+  const silent = path.startsWith('/auth/refresh') || path.startsWith('/notifications');
+  const showOverlay = overlay === true;
+  const showBar = showOverlay || progress === true || (progress !== false && mutating && !silent);
+  const endTrack = showBar ? trackRequest({ overlay: showOverlay }) : null;
 
-  if (res.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/refresh')) {
-    const refreshed = await fetch('/api/auth/refresh', {
-      method: 'POST',
+  try {
+    let res = await fetch(`/api${path}`, {
+      ...fetchOpts,
+      headers,
       credentials: 'include',
     });
-    if (refreshed.ok) {
-      const data = await refreshed.json();
-      setToken(data.accessToken || data.token);
-      headers.Authorization = `Bearer ${getToken()}`;
-      res = await fetch(`/api${path}`, {
-        ...options,
-        headers,
+
+    if (res.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/refresh')) {
+      const refreshed = await fetch('/api/auth/refresh', {
+        method: 'POST',
         credentials: 'include',
       });
+      if (refreshed.ok) {
+        const data = await refreshed.json();
+        setToken(data.accessToken || data.token);
+        headers.Authorization = `Bearer ${getToken()}`;
+        res = await fetch(`/api${path}`, {
+          ...fetchOpts,
+          headers,
+          credentials: 'include',
+        });
+      }
     }
-  }
 
-  if (options.raw) return res;
+    if (options.raw) return res;
 
-  const data = await parseResponse(res);
-  if (!res.ok) {
-    const error = new Error(data?.error || `Request failed (${res.status})`);
-    error.status = res.status;
-    error.data = data;
-    throw error;
+    const data = await parseResponse(res);
+    if (!res.ok) {
+      const error = new Error(data?.error || `Request failed (${res.status})`);
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+    return data;
+  } finally {
+    endTrack?.();
   }
-  return data;
 }
 
 export async function downloadCsv(path, filename = 'export.csv') {

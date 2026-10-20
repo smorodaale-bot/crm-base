@@ -243,7 +243,7 @@ export default function VehiclesPage() {
               onChange={(e) => setImportFile(e.target.files?.[0] || null)}
             />
             <button className="btn primary" type="submit" disabled={importBusy}>
-              {importBusy ? <AppLoader /> : 'Загрузить'}
+              {importBusy ? <AppLoader size={32} /> : 'Загрузить'}
             </button>
           </div>
           <label>

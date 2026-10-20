@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { STAGE_LABELS, formatDurationMinutes, formatMoney } from '../constants.js';
-import { PageSkeleton } from '../components/PageSkeleton.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
+import { useHeavyLoad } from '../context/LoadingContext.jsx';
 
 function criticalWord(n) {
   const mod10 = n % 10;
@@ -32,8 +33,9 @@ export default function AnalyticsPage() {
       .catch(() => setMoney(null));
   }, []);
 
+  useHeavyLoad(!data && !error);
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <PageSkeleton />;
+  if (!data) return <Skeleton variant="metrics" />;
 
   const { summary, byStage, managers } = data;
 

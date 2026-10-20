@@ -3,19 +3,16 @@ import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-do
 import { useAuth } from '../auth.jsx';
 import { PLAN_LABELS, roleLabel, SUBSCRIPTION_STATUS_LABELS } from '../constants.js';
 import NotificationBell from './NotificationBell.jsx';
-import { AppLoader } from './AppLoader.jsx';
 
 export default function Layout() {
   const { user, logout, isSupervisor, canWrite, canQc, canStock, plan, subscriptionStatus } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pendingPath, setPendingPath] = useState(null);
   const [search, setSearch] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     setMenuOpen(false);
-    setPendingPath(null);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -105,9 +102,6 @@ export default function Layout() {
               to={item.to}
               end={item.end}
               className="nav-item"
-              onClick={() => {
-                if (item.to !== location.pathname) setPendingPath(item.to);
-              }}
             >
               <span className="nav-icon" aria-hidden="true">
                 {item.icon}
@@ -125,9 +119,6 @@ export default function Layout() {
               to={item.to}
               end={item.to === '/org' ? false : item.end}
               className="nav-item"
-              onClick={() => {
-                if (item.to !== location.pathname) setPendingPath(item.to);
-              }}
             >
               <span className="nav-icon" aria-hidden="true">
                 {item.icon}
@@ -244,7 +235,7 @@ export default function Layout() {
         )}
 
         <main className="content">
-          {pendingPath ? <AppLoader /> : <Outlet />}
+          <Outlet />
         </main>
 
         <footer

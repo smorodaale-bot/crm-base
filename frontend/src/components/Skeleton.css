@@ -1,0 +1,71 @@
+.sk {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sk-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.sk-card,
+.sk-line,
+.sk-item,
+.sk-block {
+  background: linear-gradient(90deg, #ececec 25%, #f7f7f7 37%, #ececec 63%);
+  background-size: 400% 100%;
+  animation: sk-shimmer 1s ease infinite;
+  border-radius: 10px;
+}
+
+.sk-card {
+  height: 4.5rem;
+}
+
+.sk-line {
+  height: 1.15rem;
+  width: 100%;
+}
+
+.sk-line-lg {
+  width: 32%;
+  height: 1.5rem;
+}
+
+.sk-item {
+  height: 3.4rem;
+}
+
+.sk-block {
+  height: 14rem;
+}
+
+@keyframes sk-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+html[data-theme='dark'] .sk-card,
+html[data-theme='dark'] .sk-line,
+html[data-theme='dark'] .sk-item,
+html[data-theme='dark'] .sk-block {
+  background: linear-gradient(90deg, #2a2a2e 25%, #3a3a40 37%, #2a2a2e 63%);
+  background-size: 400% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-card,
+  .sk-line,
+  .sk-item,
+  .sk-block {
+    animation: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .sk-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

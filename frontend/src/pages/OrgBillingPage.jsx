@@ -13,7 +13,7 @@ import {
   formatQuota,
 } from '../constants.js';
 import OrgAdminShell from '../components/OrgAdminShell.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 
 function visiblePayments(payments, showAll) {
   const paid = payments.filter((p) => p.status === 'SUCCEEDED');
@@ -260,7 +260,7 @@ export default function OrgBillingPage() {
   }
 
   if (error) return <div className="error">{error}</div>;
-  if (!org) return <AppLoader />;
+  if (!org) return <Skeleton />;
 
   const sub = org.subscription || {};
   const usage = org.usage || {};

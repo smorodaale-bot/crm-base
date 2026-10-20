@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { formatDate, formatDurationMinutes, formatOverdue, LEAD_TYPE_LABELS, leadChannelLabel } from '../constants.js';
@@ -59,7 +59,7 @@ export default function InboxPage() {
   }
 
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <AppLoader />;
+  if (!data) return <Skeleton variant="list" />;
 
   const { counts, newLeads, overdueContact, slaBreached, visitsToday, slaMinutes } = data;
 

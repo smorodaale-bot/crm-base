@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import DealChat from '../components/DealChat.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
+import { useHeavyLoad } from '../context/LoadingContext.jsx';
 
 export default function DealChatPage() {
   const { id } = useParams();
@@ -23,8 +24,9 @@ export default function DealChatPage() {
       });
   }, [id, navigate]);
 
+  useHeavyLoad(!deal && !error);
   if (error) return <div className="error">{error}</div>;
-  if (!deal) return <AppLoader />;
+  if (!deal) return <Skeleton />;
 
   return (
     <div className="deal-chat-page">

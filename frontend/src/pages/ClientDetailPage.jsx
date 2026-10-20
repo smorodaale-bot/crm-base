@@ -5,7 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { STAGE_LABELS, formatDate, formatMoney } from '../constants.js';
 import { EmptyState } from '../components/EmptyState.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
@@ -47,7 +47,7 @@ export default function ClientDetailPage() {
   }
 
   if (error) return <div className="error">{error}</div>;
-  if (!client) return <AppLoader />;
+  if (!client) return <Skeleton />;
 
   return (
     <div>

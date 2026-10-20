@@ -12,30 +12,9 @@
   color: #111111;
 }
 
-.app-loader--inline {
-  padding: 1.5rem 0;
-  color: #111111;
-}
-
-.app-loader.is-pending {
-  visibility: hidden;
-}
-
 .nova-loader {
-  width: 72px;
-  height: 72px;
   display: block;
   overflow: visible;
-}
-
-.app-loader--inline .nova-loader {
-  width: 32px;
-  height: 32px;
-}
-
-.btn > .app-loader--inline,
-.notif-panel .app-loader--inline {
-  padding: 0;
 }
 
 .nl-ring {
@@ -54,17 +33,17 @@
 }
 
 @keyframes nl-draw {
-  0%   { stroke-dashoffset: 170;  fill: transparent; }
-  45%  { stroke-dashoffset: 0;    fill: transparent; }
+  0% { stroke-dashoffset: 170; fill: transparent; }
+  45% { stroke-dashoffset: 0; fill: transparent; }
   60%, 85% { stroke-dashoffset: 0; fill: currentColor; }
   100% { stroke-dashoffset: -170; fill: transparent; }
 }
 
 @keyframes nl-pop {
   0%, 45% { transform: scale(0) rotate(-90deg); }
-  60%     { transform: scale(1.25) rotate(0); }
+  60% { transform: scale(1.25) rotate(0); }
   70%, 85% { transform: scale(1); }
-  100%    { transform: scale(0) rotate(90deg); }
+  100% { transform: scale(0) rotate(90deg); }
 }
 
 html[data-theme='dark'] .app-loader,

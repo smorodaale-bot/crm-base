@@ -5,7 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { PLAN_LABELS, SUBSCRIPTION_STATUS_LABELS, formatDate, formatQuota } from '../constants.js';
 import OrgAdminShell from '../components/OrgAdminShell.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 
 export default function OrgSettingsPage() {
   const { isSupervisor } = useAuth();
@@ -48,7 +48,7 @@ export default function OrgSettingsPage() {
   }, [isSupervisor]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!org) return <AppLoader />;
+  if (!org) return <Skeleton />;
 
   const sub = org.subscription || {};
   const usage = org.usage || {};

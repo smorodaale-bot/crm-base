@@ -1,5 +1,5 @@
-import { AppLoader } from './AppLoader.jsx';
+import { Skeleton } from './Skeleton.jsx';
 
 export function PageSkeleton() {
-  return <AppLoader />;
+  return <Skeleton variant="list" />;
 }

@@ -97,7 +97,7 @@ export default function NotificationBell() {
           </div>
           <div className="notif-panel-list">
             {loading && !items.length ? (
-              <AppLoader />
+              <AppLoader size={32} />
             ) : !items.length ? (
               <p className="muted notif-empty">Пока нет уведомлений</p>
             ) : (

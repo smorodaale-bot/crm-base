@@ -5,7 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { formatDate } from '../constants.js';
 import OrgAdminShell from '../components/OrgAdminShell.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 
 export default function OrgChannelsPage() {
   const { isSupervisor } = useAuth();
@@ -79,7 +79,7 @@ export default function OrgChannelsPage() {
   }, [isSupervisor]);
 
   if (error) return <div className="error">{error}</div>;
-  if (loading) return <AppLoader />;
+  if (loading) return <Skeleton />;
 
   return (
     <OrgAdminShell title="Каналы" lead="Подключение источников заявок">
@@ -127,7 +127,7 @@ export default function OrgChannelsPage() {
           </div>
 
           {!leadIntake ? (
-            <AppLoader />
+            <Skeleton />
           ) : (
             <>
               <div>
@@ -288,7 +288,7 @@ export default function OrgChannelsPage() {
           </div>
 
           {!telegram ? (
-            <AppLoader />
+            <Skeleton />
           ) : (
             <>
               <ol className="muted" style={{ margin: 0, paddingLeft: '1.2rem' }}>
@@ -641,7 +641,7 @@ export default function OrgChannelsPage() {
           </div>
 
           {!maxBot ? (
-            <AppLoader />
+            <Skeleton />
           ) : (
             <>
               <ol className="muted" style={{ margin: 0, paddingLeft: '1.2rem' }}>

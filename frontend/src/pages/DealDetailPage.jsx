@@ -12,7 +12,8 @@ import {
   formatMoney,
 } from '../constants.js';
 import { EmptyState } from '../components/EmptyState.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
+import { useHeavyLoad } from '../context/LoadingContext.jsx';
 
 export default function DealDetailPage() {
   const { id } = useParams();
@@ -156,7 +157,8 @@ export default function DealDetailPage() {
     }
   }
 
-  if (!deal && !error) return <AppLoader />;
+  useHeavyLoad(!deal && !error);
+  if (!deal && !error) return <Skeleton />;
 
   return (
     <div>

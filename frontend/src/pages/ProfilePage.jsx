@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { formatDate, roleLabel } from '../constants.js';
@@ -110,7 +110,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <AppLoader />;
+  if (loading) return <Skeleton />;
   if (error) return <div className="error">{error}</div>;
 
   return (

@@ -4,7 +4,8 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { STAGE_LABELS, formatDate, formatMoney } from '../constants.js';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
+import { useHeavyLoad } from '../context/LoadingContext.jsx';
 
 const KIND = { NEW: 'Новый', USED: 'Б/у' };
 const STATUS = {
@@ -218,8 +219,9 @@ export default function VehicleDetailPage() {
     }
   }
 
+  useHeavyLoad(!vehicle && !error);
   if (error) return <div className="error">{error}</div>;
-  if (!vehicle) return <AppLoader />;
+  if (!vehicle) return <Skeleton />;
 
   const canRelease =
     vehicle.status === 'RESERVED' &&

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDate } from '../constants.js';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
+import { useHeavyLoad } from '../context/LoadingContext.jsx';
 
 export default function QcReportPage() {
   const [data, setData] = useState(null);
@@ -14,8 +15,9 @@ export default function QcReportPage() {
       .catch((err) => setError(err.message));
   }, []);
 
+  useHeavyLoad(!data && !error);
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <AppLoader />;
+  if (!data) return <Skeleton variant="metrics" />;
 
   const { summary, byManager, frequentErrors, dynamics, critical } = data;
 

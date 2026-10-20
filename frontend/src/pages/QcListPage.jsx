@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { formatDate } from '../constants.js';
 import { useAuth } from '../auth.jsx';
 import { EmptyState } from '../components/EmptyState.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 
 function ScoreBadge({ score, critical }) {
   let cls = 'score-ok';
@@ -104,7 +104,7 @@ export default function QcListPage() {
   };
 
   if (error && !data) return <div className="error">{error}</div>;
-  if (!data) return <AppLoader />;
+  if (!data) return <Skeleton variant="table" />;
 
   return (
     <div>

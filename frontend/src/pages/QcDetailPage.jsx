@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDate } from '../constants.js';
 import { useAuth } from '../auth.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
+import { useHeavyLoad } from '../context/LoadingContext.jsx';
 
 const POSITIVE = [
   'introduction',
@@ -66,8 +67,9 @@ export default function QcDetailPage() {
     }
   };
 
+  useHeavyLoad(!review && !error);
   if (error && !review) return <div className="error">{error}</div>;
-  if (!review) return <AppLoader />;
+  if (!review) return <Skeleton />;
 
   const labels = review.criterionLabels || {};
   const scores = review.criterionScores || {};

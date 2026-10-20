@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useRef, useState, useTransition } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import Layout from './components/Layout.jsx';
 import { AppLoader } from './components/AppLoader.jsx';
+import { useLoading } from './context/LoadingContext.jsx';
 
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -64,10 +65,28 @@ function FeatureRoute({ feature, children }) {
   return children;
 }
 
-export default function App() {
+function RoutedApp() {
+  const location = useLocation();
+  const [shown, setShown] = useState(location);
+  const [isPending, startTransition] = useTransition();
+  const { start } = useLoading();
+  const navStop = useRef(null);
+
+  useEffect(() => {
+    if (location.key === shown.key) return;
+    if (!navStop.current) navStop.current = start({ overlay: true });
+    startTransition(() => setShown(location));
+  }, [location, shown.key, start]);
+
+  useEffect(() => {
+    if (isPending || location.key !== shown.key || !navStop.current) return;
+    navStop.current();
+    navStop.current = null;
+  }, [isPending, location.key, shown.key]);
+
   return (
     <Suspense fallback={<AppLoader variant="fullscreen" />}>
-    <Routes>
+    <Routes location={shown}>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterOrgPage />} />
@@ -192,4 +211,8 @@ export default function App() {
     </Routes>
     </Suspense>
   );
+}
+
+export default function App() {
+  return <RoutedApp />;
 }

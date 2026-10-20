@@ -1,0 +1,53 @@
+.top-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 120;
+  background: #111111;
+  pointer-events: none;
+  transition: width 10s cubic-bezier(0.05, 0.55, 0.2, 1), opacity 0.2s ease;
+}
+
+.top-progress.is-done {
+  transition: width 0.2s ease, opacity 0.2s ease 0.12s;
+  opacity: 0;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(4px);
+  color: #111111;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.loading-overlay.is-in {
+  opacity: 1;
+}
+
+html[data-theme='dark'] .top-progress {
+  background: #ffffff;
+}
+
+html[data-theme='dark'] .loading-overlay {
+  background: rgba(11, 11, 15, 0.5);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-progress,
+  .loading-overlay {
+    transition: none;
+  }
+
+  .loading-overlay {
+    backdrop-filter: none;
+  }
+}

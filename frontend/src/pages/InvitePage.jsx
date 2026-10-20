@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api, setToken } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { AuthShell } from '../components/AuthShell.jsx';
-import { AppLoader } from '../components/AppLoader.jsx';
+import { Skeleton } from '../components/Skeleton.jsx';
 import { PasswordField } from '../components/PasswordField.jsx';
 import { useDocumentMeta } from '../hooks/useDocumentMeta.js';
 
@@ -54,7 +54,7 @@ export default function InvitePage() {
 
   return (
     <AuthShell layout="narrow" title="Принять приглашение" subtitle="Создайте пароль для доступа к CRM салона.">
-      {loading ? <AppLoader /> : null}
+      {loading ? <Skeleton /> : null}
       {invite ? (
         <>
           <div className="auth-success">
