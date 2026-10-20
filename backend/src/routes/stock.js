@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../db.js';
-import { authenticate, requireSupervisor, requireFeature } from '../middleware/auth.js';
+import { authenticate, requireSupervisor } from '../middleware/auth.js';
 import { assertFeature, assertVehicleAvailable } from '../services/plans.js';
 import { findActiveStockCredential, resolveSyncSalon } from '../services/stockSync.js';
 
@@ -39,24 +39,29 @@ const stockSyncLimiter = rateLimit({
 
 async function authorizeStock(req, res, next) {
   const header = String(req.headers['x-stock-token'] || '').trim();
-  if (header) {
-    try {
-      const credential = await findActiveStockCredential(prisma, header);
-      assertFeature(credential.organization.subscription, 'stock_api');
-      req.stockOrgId = credential.organizationId;
-      req.stockSubscription = credential.organization.subscription;
-      await prisma.stockSyncCredential.update({
-        where: { id: credential.id },
-        data: { lastUsedAt: new Date() },
-      });
-      return next();
-    } catch (err) {
-      return res.status(err.status || 403).json({ error: err.message, code: err.code || 'PLAN_FEATURE' });
-    }
+  if (!header) {
+    return res.status(401).json({ error: 'Неверный токен синхронизации склада', code: 'INVALID_TOKEN' });
   }
-  return authenticate(req, res, () =>
-    requireSupervisor(req, res, () => requireFeature('stock_api')(req, res, next))
-  );
+  try {
+    const credential = await findActiveStockCredential(prisma, header);
+    assertFeature(credential.organization.subscription, 'stock_api');
+    req.stockOrgId = credential.organizationId;
+    req.stockSubscription = credential.organization.subscription;
+    await prisma.stockSyncCredential.update({
+      where: { id: credential.id },
+      data: { lastUsedAt: new Date() },
+    });
+    return next();
+  } catch (err) {
+    if (err.code === 'PLAN_FEATURE') {
+      return res.status(403).json({ error: err.message, code: 'PLAN_FEATURE' });
+    }
+    if (err.status === 401 || err.code === 'INVALID_TOKEN') {
+      return res.status(401).json({ error: err.message, code: 'INVALID_TOKEN' });
+    }
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    return next(err);
+  }
 }
 
 /** Upsert vehicles by externalId into salons of the token's organization. */

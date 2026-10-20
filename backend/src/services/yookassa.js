@@ -3,6 +3,11 @@ import { BILLING_PERIOD_DAYS, getPlan } from './plans.js';
 
 const YOOKASSA_API = 'https://api.yookassa.ru/v3';
 
+/** Demo checkout completion exists only outside production and only when explicitly enabled. */
+export function isDemoCompleteEnabled(env = process.env) {
+  return env.NODE_ENV !== 'production' && env.YOOKASSA_DEMO === 'true';
+}
+
 export function isYookassaDemo() {
   if (process.env.NODE_ENV === 'production') return false;
   if (process.env.YOOKASSA_DEMO === 'true') return true;

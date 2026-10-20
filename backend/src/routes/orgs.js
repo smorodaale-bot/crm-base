@@ -27,6 +27,7 @@ import {
   createPayment,
   getYookassaPayment,
   isYookassaDemo,
+  isDemoCompleteEnabled,
   paymentReturnUrl,
   planCheckoutDescription,
 } from '../services/yookassa.js';
@@ -1347,13 +1348,9 @@ router.post('/subscription/checkout', requireWriteRole, requireOrgAdmin, async (
   }
 });
 
-/** Local demo only. Production hides the route so a plan cannot be activated without payment. */
-router.post('/subscription/demo-complete', (req, res, next) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  return next();
-}, requireWriteRole, requireOrgAdmin, async (req, res, next) => {
+/** Registered only for a local demo. Production never mounts this route. */
+if (isDemoCompleteEnabled()) {
+router.post('/subscription/demo-complete', requireWriteRole, requireOrgAdmin, async (req, res, next) => {
   try {
     if (!isYookassaDemo()) {
       return res.status(403).json({ error: 'Демо-оплата отключена' });
@@ -1389,6 +1386,7 @@ router.post('/subscription/demo-complete', (req, res, next) => {
     return next(err);
   }
 });
+}
 
 /**
  * After return from YooKassa: report status. Activation happens only in the succeeded webhook.

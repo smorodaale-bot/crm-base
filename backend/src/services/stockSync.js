@@ -36,6 +36,7 @@ export async function findActiveStockCredential(db, rawToken) {
   if (!token) {
     const err = new Error('Неверный токен синхронизации склада');
     err.status = 401;
+    err.code = 'INVALID_TOKEN';
     throw err;
   }
   const row = await db.stockSyncCredential.findFirst({
@@ -45,6 +46,7 @@ export async function findActiveStockCredential(db, rawToken) {
   if (!row) {
     const err = new Error('Неверный токен синхронизации склада');
     err.status = 401;
+    err.code = 'INVALID_TOKEN';
     throw err;
   }
   return row;
