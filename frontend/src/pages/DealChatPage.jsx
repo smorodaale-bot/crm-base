@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import DealChat from '../components/DealChat.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 export default function DealChatPage() {
   const { id } = useParams();
@@ -23,7 +24,7 @@ export default function DealChatPage() {
   }, [id, navigate]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!deal) return <div className="muted">Загрузка чата…</div>;
+  if (!deal) return <AppLoader />;
 
   return (
     <div className="deal-chat-page">

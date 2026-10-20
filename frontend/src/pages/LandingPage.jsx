@@ -4,6 +4,7 @@ import { useAuth } from '../auth.jsx';
 import { COMPANY } from '../legal/company.js';
 import { SupportEmailLink } from '../legal/SupportEmail.jsx';
 import { useDocumentMeta } from '../hooks/useDocumentMeta.js';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 function rub(n) {
   return new Intl.NumberFormat('ru-RU').format(n);
@@ -74,7 +75,7 @@ export default function LandingPage() {
     canonical: 'https://nova-crm.online/',
   });
 
-  if (loading) return <div className="centered">Загрузка...</div>;
+  if (loading) return <AppLoader variant="fullscreen" />;
   if (user) return <Navigate to="/inbox" replace />;
 
   return (

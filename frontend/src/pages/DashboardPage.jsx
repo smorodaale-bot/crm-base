@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { STAGE_LABELS, STAGES, formatDate, formatDurationMinutes, formatMoney } from '../constants.js';
 import { EmptyState } from '../components/EmptyState.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 const STOCK_STATUS = {
   IN_STOCK: 'В наличии',
@@ -44,7 +45,7 @@ export default function DashboardPage() {
   }, [data]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <div className="muted">Загрузка дашборда...</div>;
+  if (!data) return <AppLoader />;
 
   const { summary, bySource, byManager, lostReasons, sla } = data;
   const conversion = summary.conversion;

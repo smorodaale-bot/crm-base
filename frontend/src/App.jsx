@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import Layout from './components/Layout.jsx';
+import { AppLoader } from './components/AppLoader.jsx';
 
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
@@ -41,14 +42,14 @@ const PaymentCancelPage = lazy(() => import('./pages/PaymentCancelPage.jsx'));
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="centered">Загрузка...</div>;
+  if (loading) return <AppLoader variant="fullscreen" />;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
 function SupervisorRoute({ children }) {
   const { user, loading, isSupervisor } = useAuth();
-  if (loading) return <div className="centered">Загрузка...</div>;
+  if (loading) return <AppLoader variant="fullscreen" />;
   if (!user) return <Navigate to="/login" replace />;
   if (!isSupervisor) return <Navigate to="/inbox" replace />;
   return children;
@@ -56,7 +57,7 @@ function SupervisorRoute({ children }) {
 
 function FeatureRoute({ feature, children }) {
   const { canQc, canStock, loading, user } = useAuth();
-  if (loading) return <div className="centered">Загрузка...</div>;
+  if (loading) return <AppLoader variant="fullscreen" />;
   if (!user) return <Navigate to="/login" replace />;
   const ok = feature === 'qc' ? canQc : feature === 'stock' ? canStock : true;
   if (!ok) return <Navigate to="/org" replace />;
@@ -65,7 +66,7 @@ function FeatureRoute({ feature, children }) {
 
 export default function App() {
   return (
-    <Suspense fallback={<div className="centered">Загрузка...</div>}>
+    <Suspense fallback={<AppLoader variant="fullscreen" />}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />

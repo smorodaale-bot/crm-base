@@ -5,6 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { formatDate, formatMoney } from '../constants.js';
 import { EmptyState } from '../components/EmptyState.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 const KIND = { NEW: 'Новый', USED: 'Б/у' };
 const STATUS = {
@@ -242,7 +243,7 @@ export default function VehiclesPage() {
               onChange={(e) => setImportFile(e.target.files?.[0] || null)}
             />
             <button className="btn primary" type="submit" disabled={importBusy}>
-              {importBusy ? 'Загрузка…' : 'Загрузить'}
+              {importBusy ? <AppLoader /> : 'Загрузить'}
             </button>
           </div>
           <label>

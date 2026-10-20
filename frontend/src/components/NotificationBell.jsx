@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { AppLoader } from './AppLoader.jsx';
 import { formatDate } from '../constants.js';
 
 export default function NotificationBell() {
@@ -96,7 +97,7 @@ export default function NotificationBell() {
           </div>
           <div className="notif-panel-list">
             {loading && !items.length ? (
-              <p className="muted notif-empty">Загрузка…</p>
+              <AppLoader />
             ) : !items.length ? (
               <p className="muted notif-empty">Пока нет уведомлений</p>
             ) : (

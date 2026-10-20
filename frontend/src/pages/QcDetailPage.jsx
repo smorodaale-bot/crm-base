@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDate } from '../constants.js';
 import { useAuth } from '../auth.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 const POSITIVE = [
   'introduction',
@@ -66,7 +67,7 @@ export default function QcDetailPage() {
   };
 
   if (error && !review) return <div className="error">{error}</div>;
-  if (!review) return <div className="muted">Загрузка...</div>;
+  if (!review) return <AppLoader />;
 
   const labels = review.criterionLabels || {};
   const scores = review.criterionScores || {};

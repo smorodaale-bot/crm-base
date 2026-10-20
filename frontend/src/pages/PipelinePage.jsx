@@ -12,6 +12,7 @@ import {
   formatMoney,
 } from '../constants.js';
 import { EmptyState } from '../components/EmptyState.jsx';
+import { PageSkeleton } from '../components/PageSkeleton.jsx';
 
 export default function PipelinePage() {
   const { isSupervisor, canWrite } = useAuth();
@@ -260,7 +261,7 @@ export default function PipelinePage() {
 
       {error && <div className="error">{error}</div>}
       {loading ? (
-        <div className="muted">Загрузка...</div>
+        <PageSkeleton />
       ) : (
         <div className="pipeline">
           {STAGES.map((stage) => {

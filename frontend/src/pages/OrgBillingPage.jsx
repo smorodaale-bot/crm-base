@@ -13,6 +13,7 @@ import {
   formatQuota,
 } from '../constants.js';
 import OrgAdminShell from '../components/OrgAdminShell.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 function visiblePayments(payments, showAll) {
   const paid = payments.filter((p) => p.status === 'SUCCEEDED');
@@ -259,7 +260,7 @@ export default function OrgBillingPage() {
   }
 
   if (error) return <div className="error">{error}</div>;
-  if (!org) return <div className="muted">Загрузка организации...</div>;
+  if (!org) return <AppLoader />;
 
   const sub = org.subscription || {};
   const usage = org.usage || {};

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-do
 import { useAuth } from '../auth.jsx';
 import { PLAN_LABELS, roleLabel, SUBSCRIPTION_STATUS_LABELS } from '../constants.js';
 import NotificationBell from './NotificationBell.jsx';
+import { AppLoader } from './AppLoader.jsx';
 
 export default function Layout() {
   const { user, logout, isSupervisor, canWrite, canQc, canStock, plan, subscriptionStatus } = useAuth();
@@ -243,7 +244,7 @@ export default function Layout() {
         )}
 
         <main className="content">
-          {pendingPath ? <div className="page-pending">Загрузка...</div> : <Outlet />}
+          {pendingPath ? <AppLoader /> : <Outlet />}
         </main>
 
         <footer

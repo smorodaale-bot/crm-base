@@ -54,7 +54,40 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <style>
+        .app-loader { color: #111111; display: flex; align-items: center; justify-content: center; }
+        .app-loader--fullscreen { min-height: 100vh; min-height: 100dvh; background: #f7f8fa; color: #111111; }
+        .nova-loader { width: 72px; height: 72px; display: block; overflow: visible; }
+        .nl-ring { fill: transparent; stroke: currentColor; stroke-width: 1.2; stroke-dasharray: 170; animation: nl-draw 2.4s ease-in-out infinite; }
+        .nl-star { fill: currentColor; transform-box: view-box; transform-origin: 44.41px 20.19px; animation: nl-pop 2.4s ease-in-out infinite; }
+        @keyframes nl-draw {
+          0% { stroke-dashoffset: 170; fill: transparent; }
+          45% { stroke-dashoffset: 0; fill: transparent; }
+          60%, 85% { stroke-dashoffset: 0; fill: currentColor; }
+          100% { stroke-dashoffset: -170; fill: transparent; }
+        }
+        @keyframes nl-pop {
+          0%, 45% { transform: scale(0) rotate(-90deg); }
+          60% { transform: scale(1.25) rotate(0); }
+          70%, 85% { transform: scale(1); }
+          100% { transform: scale(0) rotate(90deg); }
+        }
+        html[data-theme='dark'] .app-loader,
+        .app-loader--on-dark { color: #ffffff; }
+        html[data-theme='dark'] .app-loader--fullscreen,
+        .app-loader--fullscreen.app-loader--on-dark { background: #111111; }
+        @media (prefers-reduced-motion: reduce) {
+          .nl-ring, .nl-star { animation: none; fill: currentColor; stroke: none; transform: none; }
+        }
+      </style>
+      <div class="app-loader app-loader--fullscreen">
+        <svg viewBox="0 0 64 64" class="nova-loader" role="status" aria-label="Загрузка">
+          <path class="nl-ring" d="M35.19 10.92 A24 24 0 1 0 53.68 29.41 L46.05 31.03 A16.2 16.2 0 1 1 33.57 18.55Z"/>
+          <path class="nl-star" d="M44.41 3.23 L47.69 16.91 L57.13 20.19 L47.69 23.47 L44.41 37.14 L41.13 23.47 L31.7 20.19 L41.13 16.91Z"/>
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

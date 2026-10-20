@@ -12,6 +12,7 @@ import {
   formatMoney,
 } from '../constants.js';
 import { EmptyState } from '../components/EmptyState.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 export default function DealDetailPage() {
   const { id } = useParams();
@@ -155,7 +156,7 @@ export default function DealDetailPage() {
     }
   }
 
-  if (!deal && !error) return <div className="muted">Загрузка...</div>;
+  if (!deal && !error) return <AppLoader />;
 
   return (
     <div>

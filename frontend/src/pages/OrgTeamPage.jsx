@@ -5,6 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { ROLE_LABELS, roleLabel } from '../constants.js';
 import OrgAdminShell from '../components/OrgAdminShell.jsx';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 function formatSeatLine(used, limit) {
   const n = Number(used) || 0;
@@ -113,7 +114,7 @@ export default function OrgTeamPage() {
   }
 
   if (error) return <div className="error">{error}</div>;
-  if (!org) return <div className="muted">Загрузка организации...</div>;
+  if (!org) return <AppLoader />;
 
   const usage = org.usage || {};
 

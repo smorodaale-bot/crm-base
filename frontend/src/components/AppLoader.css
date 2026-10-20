@@ -1,0 +1,88 @@
+.app-loader {
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-loader--fullscreen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg, #f7f8fa);
+  color: #111111;
+}
+
+.app-loader--inline {
+  padding: 1.5rem 0;
+  color: #111111;
+}
+
+.app-loader.is-pending {
+  visibility: hidden;
+}
+
+.nova-loader {
+  width: 72px;
+  height: 72px;
+  display: block;
+  overflow: visible;
+}
+
+.app-loader--inline .nova-loader {
+  width: 32px;
+  height: 32px;
+}
+
+.btn > .app-loader--inline,
+.notif-panel .app-loader--inline {
+  padding: 0;
+}
+
+.nl-ring {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-dasharray: 170;
+  animation: nl-draw 2.4s ease-in-out infinite;
+}
+
+.nl-star {
+  fill: currentColor;
+  transform-box: view-box;
+  transform-origin: 44.41px 20.19px;
+  animation: nl-pop 2.4s ease-in-out infinite;
+}
+
+@keyframes nl-draw {
+  0%   { stroke-dashoffset: 170;  fill: transparent; }
+  45%  { stroke-dashoffset: 0;    fill: transparent; }
+  60%, 85% { stroke-dashoffset: 0; fill: currentColor; }
+  100% { stroke-dashoffset: -170; fill: transparent; }
+}
+
+@keyframes nl-pop {
+  0%, 45% { transform: scale(0) rotate(-90deg); }
+  60%     { transform: scale(1.25) rotate(0); }
+  70%, 85% { transform: scale(1); }
+  100%    { transform: scale(0) rotate(90deg); }
+}
+
+html[data-theme='dark'] .app-loader,
+.app-loader--on-dark {
+  color: #ffffff;
+}
+
+html[data-theme='dark'] .app-loader--fullscreen,
+.app-loader--fullscreen.app-loader--on-dark {
+  background: #111111;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nl-ring,
+  .nl-star {
+    animation: none;
+    fill: currentColor;
+    stroke: none;
+    transform: none;
+  }
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDate } from '../constants.js';
+import { AppLoader } from '../components/AppLoader.jsx';
 
 export default function QcReportPage() {
   const [data, setData] = useState(null);
@@ -14,7 +15,7 @@ export default function QcReportPage() {
   }, []);
 
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <div className="muted">Загрузка отчёта...</div>;
+  if (!data) return <AppLoader />;
 
   const { summary, byManager, frequentErrors, dynamics, critical } = data;
 

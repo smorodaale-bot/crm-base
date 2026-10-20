@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { AppLoader } from '../components/AppLoader.jsx';
 import { useAuth } from '../auth.jsx';
 import { useToast } from '../toast.jsx';
 import { formatDate, roleLabel } from '../constants.js';
@@ -109,7 +110,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) return <div className="muted">Загрузка кабинета...</div>;
+  if (loading) return <AppLoader />;
   if (error) return <div className="error">{error}</div>;
 
   return (
