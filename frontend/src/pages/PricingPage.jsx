@@ -9,33 +9,37 @@ const FALLBACK_PLANS = [
     name: 'Старт',
     priceRub: 1490,
     priceYearPerMonthRub: 1190,
+    promoPriceRub: 745,
     description: 'Авито и форма сайта, склад до 30 авто',
-    points: ['До 2 пользователей', 'До 30 авто на складе', 'Заявки: Авито и форма сайта'],
+    points: ['До 2 пользователей', 'Склад до 30 авто', 'Заявки: Авито и форма сайта'],
   },
   {
     id: 'BASIC',
     name: 'Базовый',
     priceRub: 2990,
     priceYearPerMonthRub: 2390,
-    description: 'Лиды, воронка и задачи для салона',
-    points: ['До 5 пользователей', 'Без склада/1С'],
+    description: 'Лиды, воронка и склад без лимита',
+    points: ['До 5 пользователей', 'Склад авто + импорт из Excel/CSV'],
+    promoPriceRub: 1495,
   },
   {
     id: 'ADVANCED',
     name: 'Продвинутый',
     priceRub: 6990,
     priceYearPerMonthRub: 5590,
+    promoPriceRub: 3495,
     popular: true,
-    description: 'QC, SpeechKit, склад/1С и полная аналитика',
-    points: ['До 15 пользователей', 'Склад/1С'],
+    description: 'QC, SpeechKit и API синхронизации склада',
+    points: ['До 15 пользователей', 'Склад + импорт Excel/CSV + API синхронизации склада'],
   },
   {
     id: 'ULTRA',
     name: 'Ultra',
     priceRub: 14990,
     priceYearPerMonthRub: 11990,
+    promoPriceRub: 7495,
     description: 'Безлимит сотрудников, несколько салонов, приоритетная поддержка',
-    points: ['Без ограничений', 'Приоритетная поддержка'],
+    points: ['Без ограничений', 'Склад + импорт Excel/CSV + API синхронизации склада', 'Приоритетная поддержка'],
   },
 ];
 
@@ -49,6 +53,7 @@ function formatRub(n) {
 
 export default function PricingPage() {
   const [plans, setPlans] = useState(FALLBACK_PLANS);
+  const [promo, setPromo] = useState(null);
   const [interval, setInterval] = useState('month');
 
   useEffect(() => {
@@ -56,6 +61,7 @@ export default function PricingPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.plans?.length) setPlans(data.plans);
+        if (data?.promo) setPromo(data.promo);
       })
       .catch(() => {});
   }, []);
@@ -74,10 +80,12 @@ export default function PricingPage() {
           Год −20%
         </button>
       </div>
+      {interval === 'month' && promo?.active ? <p className="site-note">{promo.label}</p> : null}
       <div className="site-pricing-grid">
         {plans.map((p) => {
           const featured = Boolean(p.popular) || p.id === 'ADVANCED';
-          const perMonth = interval === 'year' ? p.priceYearPerMonthRub : p.priceRub;
+          const promoOn = interval === 'month' && promo?.active;
+          const perMonth = interval === 'year' ? p.priceYearPerMonthRub : promoOn ? p.promoPriceRub : p.priceRub;
           const yearTotal = (p.priceYearPerMonthRub || 0) * 12;
           return (
             <article
@@ -87,9 +95,13 @@ export default function PricingPage() {
               {featured ? <span className="site-plan-badge">Популярный</span> : null}
               <h2 className="site-plan-name">{p.name}</h2>
               <div className="site-plan-price">
+                {promoOn ? <span className="plan-price-old">{formatRub(p.priceRub)}</span> : null}{' '}
                 {formatRub(perMonth)}
                 <span>/мес</span>
               </div>
+              {promoOn ? (
+                <p className="plan-price-note">первые {promo.months || 3} мес., далее {formatRub(p.priceRub)}</p>
+              ) : null}
               {interval === 'year' ? <p className="site-plan-desc">К оплате {formatRub(yearTotal)} за год</p> : null}
               <p className="site-plan-desc">{p.description}</p>
               <ul className="site-plan-list">

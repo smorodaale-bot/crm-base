@@ -13,11 +13,13 @@ import {
   resolveSubscriptionState,
   assertChannelAvailable,
   assertChannelKind,
+  assertFeature,
   channelLimit,
   seatLimit,
   vehicleLimit,
   quotePlan,
   earlyPromoForOrg,
+  publicPromoOffer,
   PLAN_ORDER,
   TRIAL_NOTE,
 } from '../services/plans.js';
@@ -167,8 +169,13 @@ async function serializeOrg(org) {
   };
 }
 
-router.get('/plans', (_req, res) => {
-  return res.json({ plans: listPlans(), trialNote: TRIAL_NOTE });
+router.get('/plans', async (_req, res, next) => {
+  try {
+    const promo = await publicPromoOffer();
+    return res.json({ plans: listPlans(), trialNote: TRIAL_NOTE, promo });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 router.use(authenticate);
@@ -331,6 +338,92 @@ router.patch('/lead-intake', requireWrite, requireOrgAdmin, async (req, res, nex
     return res.json({
       ...leadIntakePayload(org),
       message: 'Домены сайта сохранены',
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+async function stockSyncView(org) {
+  const plan = org.subscription?.plan || 'BASIC';
+  const enabled = Boolean(getPlan(plan).features?.stock_api);
+  const active = await prisma.stockSyncCredential.findFirst({
+    where: { organizationId: org.id, revokedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return {
+    enabled,
+    hasToken: Boolean(active),
+    createdAt: active?.createdAt || null,
+    lastUsedAt: active?.lastUsedAt || null,
+    headerName: 'X-Stock-Token',
+    webhookUrl: `${publicAppUrl()}/api/stock/sync`,
+    hint: enabled
+      ? 'Токен показывается один раз. В базе хранится только хэш. Заголовок X-Stock-Token, в теле обязателен salonSlug этой организации.'
+      : 'API синхронизации склада доступно на тарифе Продвинутый.',
+  };
+}
+
+router.get('/stock-sync', requireOrgAdmin, async (req, res, next) => {
+  try {
+    if (!req.user.organizationId) return res.status(400).json({ error: 'Нет организации' });
+    const org = await prisma.organization.findUnique({
+      where: { id: req.user.organizationId },
+      include: { subscription: true },
+    });
+    if (!org) return res.status(404).json({ error: 'Организация не найдена' });
+    return res.json(await stockSyncView(org));
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/stock-sync/token', requireWrite, requireOrgAdmin, async (req, res, next) => {
+  try {
+    if (!req.user.organizationId) return res.status(400).json({ error: 'Нет организации' });
+    const org = await prisma.organization.findUnique({
+      where: { id: req.user.organizationId },
+      include: { subscription: true },
+    });
+    if (!org) return res.status(404).json({ error: 'Организация не найдена' });
+    assertFeature(org.subscription, 'stock_api');
+    const token = crypto.randomBytes(32).toString('hex');
+    const now = new Date();
+    await prisma.$transaction([
+      prisma.stockSyncCredential.updateMany({
+        where: { organizationId: org.id, revokedAt: null },
+        data: { revokedAt: now },
+      }),
+      prisma.stockSyncCredential.create({
+        data: { organizationId: org.id, tokenHash: hashToken(token) },
+      }),
+    ]);
+    return res.json({
+      ...(await stockSyncView(org)),
+      token,
+      message: 'Скопируйте токен сейчас. Повторно он не показывается. Старый токен отозван.',
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    return next(err);
+  }
+});
+
+router.post('/stock-sync/revoke', requireWrite, requireOrgAdmin, async (req, res, next) => {
+  try {
+    if (!req.user.organizationId) return res.status(400).json({ error: 'Нет организации' });
+    const org = await prisma.organization.findUnique({
+      where: { id: req.user.organizationId },
+      include: { subscription: true },
+    });
+    if (!org) return res.status(404).json({ error: 'Организация не найдена' });
+    await prisma.stockSyncCredential.updateMany({
+      where: { organizationId: org.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return res.json({
+      ...(await stockSyncView(org)),
+      message: 'Токен синхронизации склада отозван',
     });
   } catch (err) {
     return next(err);
@@ -1254,10 +1347,15 @@ router.post('/subscription/checkout', requireWriteRole, requireOrgAdmin, async (
   }
 });
 
-/** Local demo only. Production never activates a plan from this route. */
-router.post('/subscription/demo-complete', requireWriteRole, requireOrgAdmin, async (req, res, next) => {
+/** Local demo only. Production hides the route so a plan cannot be activated without payment. */
+router.post('/subscription/demo-complete', (req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  return next();
+}, requireWriteRole, requireOrgAdmin, async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV === 'production' || !isYookassaDemo()) {
+    if (!isYookassaDemo()) {
       return res.status(403).json({ error: 'Демо-оплата отключена' });
     }
     const paymentId = Number(req.body.paymentId);

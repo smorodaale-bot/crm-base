@@ -31,12 +31,14 @@ const PLAN_CATALOG = {
       qc: false,
       speechkit: false,
       stock: true,
+      stock_import: false,
+      stock_api: false,
       analytics: true,
       analytics_export: false,
       multi_salon: false,
       priority_support: false,
     },
-    points: ['До 2 пользователей', 'До 30 авто на складе', 'Заявки: Авито и форма сайта'],
+    points: ['До 2 пользователей', 'Склад до 30 авто', 'Заявки: Авито и форма сайта'],
   },
   BASIC: {
     id: 'BASIC',
@@ -48,17 +50,19 @@ const PLAN_CATALOG = {
     vehicleLimit: null,
     channels: null,
     allowedChannels: null,
-    description: 'Лиды, воронка и задачи для салона',
+    description: 'Лиды, воронка и склад без лимита',
     features: {
       qc: false,
       speechkit: false,
-      stock: false,
+      stock: true,
+      stock_import: true,
+      stock_api: false,
       analytics: true,
       analytics_export: false,
       multi_salon: false,
       priority_support: false,
     },
-    points: ['До 5 пользователей', 'Без склада/1С'],
+    points: ['До 5 пользователей', 'Склад авто + импорт из Excel/CSV'],
   },
   ADVANCED: {
     id: 'ADVANCED',
@@ -70,18 +74,20 @@ const PLAN_CATALOG = {
     vehicleLimit: null,
     channels: null,
     allowedChannels: null,
-    description: 'QC, SpeechKit, склад/1С и полная аналитика',
+    description: 'QC, SpeechKit и API синхронизации склада',
     popular: true,
     features: {
       qc: true,
       speechkit: true,
       stock: true,
+      stock_import: true,
+      stock_api: true,
       analytics: true,
       analytics_export: false,
       multi_salon: false,
       priority_support: false,
     },
-    points: ['До 15 пользователей', 'Склад/1С'],
+    points: ['До 15 пользователей', 'Склад + импорт Excel/CSV + API синхронизации склада'],
   },
   ULTRA: {
     id: 'ULTRA',
@@ -98,12 +104,14 @@ const PLAN_CATALOG = {
       qc: true,
       speechkit: true,
       stock: true,
+      stock_import: true,
+      stock_api: true,
       analytics: true,
       analytics_export: true,
       multi_salon: true,
       priority_support: true,
     },
-    points: ['Без ограничений', 'Приоритетная поддержка'],
+    points: ['Без ограничений', 'Склад + импорт Excel/CSV + API синхронизации склада', 'Приоритетная поддержка'],
   },
 };
 
@@ -112,7 +120,26 @@ export function getPlan(plan) {
 }
 
 export function listPlans() {
-  return PLAN_ORDER.map((id) => PLAN_CATALOG[id]);
+  return PLAN_ORDER.map((id) => {
+    const plan = PLAN_CATALOG[id];
+    return { ...plan, promoPriceRub: Math.round(plan.priceRub / 2) };
+  });
+}
+
+/** Public offer while EARLY_PROMO is on and fewer than 30 organizations exist. */
+export async function publicPromoOffer() {
+  const base = {
+    active: false,
+    label: PROMO_LABEL,
+    percent: 50,
+    months: PROMO_MONTHS,
+    orgLimit: PROMO_ORG_LIMIT,
+    slotsLeft: 0,
+  };
+  if (!config.earlyPromo) return base;
+  const used = await prisma.organization.count({ where: { isTest: false } });
+  const slotsLeft = Math.max(0, PROMO_ORG_LIMIT - used);
+  return { ...base, active: slotsLeft > 0, slotsLeft };
 }
 
 export function isYearInterval(interval) {
@@ -165,8 +192,22 @@ export function vehicleLimit(plan) {
   return getPlan(plan).vehicleLimit;
 }
 
+const FEATURE_ALIASES = {
+  stock_1c: 'stock_api',
+  stock_sync: 'stock_api',
+};
+
+export function canonicalFeature(feature) {
+  return FEATURE_ALIASES[feature] || feature;
+}
+
 export function hasFeature(plan, feature) {
-  return Boolean(getPlan(plan).features?.[feature]);
+  const features = getPlan(plan).features || {};
+  const key = canonicalFeature(feature);
+  if (key === 'stock_api') {
+    return Boolean(features.stock_api || features.stock_sync || features.stock_1c);
+  }
+  return Boolean(features[key] ?? features[feature]);
 }
 
 /** Effective subscription after trial expiry. */
@@ -316,8 +357,15 @@ export async function earlyPromoForOrg(organizationId, promoMonthsUsed = 0) {
   if (!config.earlyPromo || !organizationId || monthsLeft <= 0) {
     return { eligible: false, monthsUsed: used, monthsLeft: 0, label: PROMO_LABEL };
   }
+  const org = await prisma.organization.findUnique({
+    where: { id: Number(organizationId) },
+    select: { isTest: true },
+  });
+  if (org?.isTest) {
+    return { eligible: false, monthsUsed: used, monthsLeft: 0, label: PROMO_LABEL };
+  }
   const rank = await prisma.organization.count({
-    where: { id: { lte: Number(organizationId) } },
+    where: { isTest: false, id: { lte: Number(organizationId) } },
   });
   const eligible = rank > 0 && rank <= PROMO_ORG_LIMIT;
   return {

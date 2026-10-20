@@ -70,6 +70,7 @@ export default function RegisterOrgPage() {
   const [emailOtp, setEmailOtp] = useState(true);
   const [plans, setPlans] = useState([]);
   const [trialNote, setTrialNote] = useState('14 дней бесплатно на любом тарифе');
+  const [promo, setPromo] = useState(null);
   const [interval, setInterval] = useState('month');
 
   useEffect(() => {
@@ -80,6 +81,7 @@ export default function RegisterOrgPage() {
       .then((data) => {
         setPlans(data.plans || []);
         if (data.trialNote) setTrialNote(data.trialNote);
+        if (data.promo) setPromo(data.promo);
       })
       .catch(() => {});
   }, []);
@@ -331,9 +333,11 @@ export default function RegisterOrgPage() {
                 Год −20%
               </button>
             </div>
+            {interval === 'month' && promo?.active ? <p className="auth-hint">{promo.label}</p> : null}
             <div className="auth-tariffs" role="radiogroup" aria-label="Выбор тарифа">
               {plans.map((plan) => {
-                const perMonth = interval === 'year' ? plan.priceYearPerMonthRub : plan.priceRub;
+                const promoOn = interval === 'month' && promo?.active;
+                const perMonth = interval === 'year' ? plan.priceYearPerMonthRub : promoOn ? plan.promoPriceRub : plan.priceRub;
                 const yearTotal = (plan.priceYearPerMonthRub || 0) * 12;
                 return (
                 <button
@@ -348,11 +352,18 @@ export default function RegisterOrgPage() {
                   <span className="auth-tariff-top">
                     <strong>{plan.name}</strong>
                     <span>
+                      {promoOn ? (
+                        <small className="plan-price-old">{new Intl.NumberFormat('ru-RU').format(plan.priceRub)} ₽</small>
+                      ) : null}{' '}
                       {new Intl.NumberFormat('ru-RU').format(perMonth)} <small>₽/мес</small>
                     </span>
                   </span>
                   {interval === 'year' ? (
                     <span className="auth-hint">К оплате {new Intl.NumberFormat('ru-RU').format(yearTotal)} ₽ за год</span>
+                  ) : promoOn ? (
+                    <span className="plan-price-note">
+                      первые {promo.months || 3} мес., далее {new Intl.NumberFormat('ru-RU').format(plan.priceRub)} ₽
+                    </span>
                   ) : null}
                   <span className="auth-hint">{plan.description}</span>
                   <span className="auth-tariff-feats">{(plan.points || []).join(' · ')}</span>

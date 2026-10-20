@@ -116,6 +116,8 @@ model Organization {
   /** Avito inbound webhook token (X-Avito-Token / X-Lead-Token) */
   avitoWebhookToken   String?   @unique
   avitoConnectedAt    DateTime?
+  /** Excluded from the early-promo seat count (demo and internal salons). */
+  isTest              Boolean   @default(false)
   /** WhatsApp inbound (Green-API / Meta) */
   whatsappWebhookToken String?  @unique
   whatsappVerifyToken  String?
@@ -135,6 +137,21 @@ model Organization {
   payments     Payment[]
   clients      Client[]
   telegramDialogs TelegramDialog[]
+  stockSyncCredentials StockSyncCredential[]
+}
+
+/** Warehouse sync secret. Only the SHA-256 hash is stored; the raw token is shown once. */
+model StockSyncCredential {
+  id             Int       @id @default(autoincrement())
+  organizationId Int
+  tokenHash      String    @unique
+  createdAt      DateTime  @default(now())
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 model Payment {

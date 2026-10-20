@@ -222,6 +222,13 @@ export async function getYookassaPayment(paymentId) {
   return data;
 }
 
+/** True when the payment fetched from YooKassa is for the same ruble amount we stored. */
+export function yookassaAmountMatches(remote, amountRub) {
+  const value = Number(remote?.amount?.value);
+  if (!Number.isFinite(value) || !Number.isFinite(Number(amountRub))) return false;
+  return Math.round(value * 100) === Math.round(Number(amountRub) * 100);
+}
+
 export function planCheckoutDescription(plan, interval) {
   const p = getPlan(plan);
   if (interval === 'year') return `Nova CRM — тариф ${p.name} на год`;

@@ -54,6 +54,7 @@ function LandingHeroMock() {
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const [plans, setPlans] = useState([]);
+  const [promo, setPromo] = useState(null);
   const [interval, setInterval] = useState('month');
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function LandingPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.plans?.length) setPlans(data.plans);
+        if (data?.promo) setPromo(data.promo);
       })
       .catch(() => {});
   }, []);
@@ -191,16 +193,22 @@ export default function LandingPage() {
               Год −20%
             </button>
           </div>
+          {interval === 'month' && promo?.active ? <p className="lp-section-lead">{promo.label}</p> : null}
           <div className="lp-plans">
             {plans.map((p) => {
-              const perMonth = interval === 'year' ? p.priceYearPerMonthRub : p.priceRub;
+              const promoOn = interval === 'month' && promo?.active;
+              const perMonth = interval === 'year' ? p.priceYearPerMonthRub : promoOn ? p.promoPriceRub : p.priceRub;
               return (
               <article key={p.id} className={`lp-plan${p.popular ? ' is-featured' : ''}`}>
                 <h3>{p.name}</h3>
                 <p className="lp-plan-price">
+                  {promoOn ? <span className="plan-price-old">{rub(p.priceRub)} ₽</span> : null}{' '}
                   {rub(perMonth)} ₽
                   <span>/ мес</span>
                 </p>
+                {promoOn ? (
+                  <p className="plan-price-note">первые {promo.months || 3} мес., далее {rub(p.priceRub)} ₽</p>
+                ) : null}
                 <p className="lp-plan-blurb">{(p.points || []).join(' · ') || p.description}</p>
                 <Link className="lp-btn solid" to="/register">
                   Начать
