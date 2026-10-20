@@ -78,6 +78,7 @@ export default function OrgBillingPage() {
   const [trialNote, setTrialNote] = useState('14 дней бесплатно на любом тарифе');
   const [paying, setPaying] = useState(false);
   const [interval, setInterval] = useState('month');
+  const [catalogPromo, setCatalogPromo] = useState(null);
   const [paymentBanner, setPaymentBanner] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [showAllPayments, setShowAllPayments] = useState(false);
@@ -105,6 +106,7 @@ export default function OrgBillingPage() {
       applyOrg(orgData.organization);
       setPlans(plansData.plans || []);
       if (plansData.trialNote) setTrialNote(plansData.trialNote);
+      setCatalogPromo(plansData.promo || null);
       setPayments(paymentsData.payments || []);
     } catch (err) {
       setError(err.message);
@@ -393,8 +395,8 @@ export default function OrgBillingPage() {
               Год −20%
             </button>
           </div>
-          {interval === 'month' && org.promo?.eligible ? (
-            <p className="sub-banner">{org.promo.label || 'Скидка первым салонам −50% на 3 мес.'}</p>
+          {interval === 'month' && (org.promo?.eligible || catalogPromo?.active) ? (
+            <p className="sub-banner">{org.promo?.label || catalogPromo?.label || 'Скидка первым салонам −50% на 3 мес.'}</p>
           ) : null}
           <label className="org-admin-check" htmlFor="billing-offer-accept" style={{ marginBottom: '1rem' }}>
             <input
@@ -419,9 +421,12 @@ export default function OrgBillingPage() {
           <div className="plan-grid">
             {plans.map((p) => {
               const active = sub.plan === p.id;
-              const promo = interval === 'month' && org.promo?.eligible;
+              const promo =
+                interval === 'month' &&
+                (Boolean(org.promo?.eligible) ||
+                  (Boolean(catalogPromo?.active) && org.promo?.monthsLeft !== 0));
               const perMonth = promo
-                ? Math.round(p.priceRub / 2)
+                ? p.promoPriceRub ?? Math.round(p.priceRub / 2)
                 : interval === 'year'
                   ? p.priceYearPerMonthRub
                   : p.priceRub;
@@ -439,6 +444,10 @@ export default function OrgBillingPage() {
                   </div>
                   {interval === 'year' ? (
                     <p className="muted">К оплате {formatMoney(yearTotal)} за год</p>
+                  ) : promo ? (
+                    <p className="plan-price-note">
+                      первые {catalogPromo?.months || 3} мес., далее {formatMoney(p.priceRub)}
+                    </p>
                   ) : null}
                   <p className="muted">{p.description}</p>
                   <ul className="plain-list">

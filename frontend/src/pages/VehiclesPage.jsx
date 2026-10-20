@@ -15,7 +15,7 @@ const STATUS = {
 };
 
 export default function VehiclesPage() {
-  const { canWrite } = useAuth();
+  const { canWrite, canStockImport } = useAuth();
   const toast = useToast();
   const [vehicles, setVehicles] = useState([]);
   const [search, setSearch] = useState('');
@@ -212,7 +212,7 @@ export default function VehiclesPage() {
         </form>
       )}
 
-      {canWrite && (
+      {canWrite && canStockImport && (
         <form className="panel stack" style={{ marginTop: 16 }} onSubmit={importStock}>
           <div>
             <h2>Загрузить из Excel</h2>
